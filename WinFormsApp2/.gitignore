@@ -1,0 +1,36 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio cache
+.vs/
+*.user
+*.suo
+
+# Build logs
+*.log
+
+# NuGet packages (if not restoring from package.json)
+packages/
+*.nupkg
+
+# Auto-generated files from Designer
+*.designer.cs
+
+# Optional: because WinForms creates these
+*.cache
+*.config
+
+# Rider / VS Code / JetBrains stuff
+.idea/
+.vscode/
+
+# Backup files
+*.tmp
+*.bak
+*.old
+
+# Publish output
+pub/
+
+Database.cs
