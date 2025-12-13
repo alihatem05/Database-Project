@@ -105,7 +105,7 @@ namespace Agent_Activities_Tracker
             foreach (var a in docs)
             {
                 if (!a.Contains("action_id") || string.IsNullOrWhiteSpace(a["action_id"].ToString()))
-                    continue; // ignore invalid rows
+                    continue; 
 
                 string timestamp = a.Contains("timestamp")
                     ? a["timestamp"].ToUniversalTime().ToString("yyyy-MM-dd HH:mm")

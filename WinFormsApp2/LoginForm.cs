@@ -116,7 +116,6 @@ public class LoginForm : Form
 
             AppState.CurrentUser = employee;
 
-            // Push login to navigation stack
             AppState.Navigation.Push(this);
 
             if (employee.role.ToLower() == "supervisor")

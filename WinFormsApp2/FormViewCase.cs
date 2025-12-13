@@ -1,5 +1,4 @@
-﻿// FormViewCase.cs
-using AgentActivitiesTracker;
+﻿using AgentActivitiesTracker;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
@@ -163,11 +162,9 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // Fetch all actions for this case
             var filter = Builders<BsonDocument>.Filter.Eq("case_id", caseId);
             var caseActions = actionsCollection.Find(filter).ToList();
 
-            // RULE 1: Case cannot end if no actions
             if (caseActions.Count == 0)
             {
                 MessageBox.Show(
@@ -179,7 +176,6 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // RULE 2: Case cannot end if ALL actions are not reviewed
             bool anyReviewed = caseActions.Any(a =>
                 a.Contains("is_reviewed") &&
                 a["is_reviewed"].IsBoolean &&
@@ -196,7 +192,6 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // VALID → close case
             caseCollection.UpdateOne(
                 filter,
                 Builders<BsonDocument>.Update
@@ -204,11 +199,9 @@ namespace Agent_Activities_Tracker
                     .Set("closed_date", DateTime.UtcNow)
             );
 
-            // Load doc and actions for report
             var doc = caseCollection.Find(filter).FirstOrDefault();
-            var actions = caseActions; // already loaded above
+            var actions = caseActions; 
 
-            // Open report (back goes to ShowAgentForm)
             var report = new FormReport(doc, actions);
             this.Hide();
             report.Show();

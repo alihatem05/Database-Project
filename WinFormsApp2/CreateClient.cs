@@ -1,5 +1,4 @@
-﻿// CreateClient.cs
-using AgentActivitiesTracker;
+﻿using AgentActivitiesTracker;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
@@ -241,7 +240,6 @@ namespace AgentActivitiesTracker
                 MessageBox.Show($"Client created successfully! ID = {newClientId}",
                     "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // Navigate back to CreateCaseForm and set the new client as selected
                 if (AppState.Navigation.Count > 0)
                 {
                     var prev = AppState.Navigation.Pop();

@@ -15,7 +15,6 @@ namespace AgentActivitiesTracker
             AppState.Db = new Database();
 
             Application.Run(new LoginForm());
-            // Application.Run(new FormAddAction());
         }
     }
 }

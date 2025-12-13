@@ -97,7 +97,6 @@ namespace Agent_Activities_Tracker
 
             try
             {
-                // Supervisor ONLY sees cases assigned to them
                 var filter = Builders<BsonDocument>.Filter.Eq("supervisor_id", user.employee_id);
 
                 caseDocs = await casesCollection.Find(filter)

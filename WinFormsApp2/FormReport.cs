@@ -1,5 +1,4 @@
-﻿// FormReport.cs
-using AgentActivitiesTracker;
+﻿using AgentActivitiesTracker;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
@@ -63,7 +62,6 @@ namespace Agent_Activities_Tracker
             };
             Controls.Add(root);
 
-            // Back / Quit buttons at top
             var headerBar = new FlowLayoutPanel { Dock = DockStyle.Top, FlowDirection = FlowDirection.LeftToRight, Height = 40 };
             btnBack = new Button { Text = "Back", Width = 100 };
             btnQuit = new Button { Text = "Quit", Width = 100 };
@@ -83,7 +81,6 @@ namespace Agent_Activities_Tracker
             };
             root.Controls.Add(lblHeader);
 
-            // description
             var descLabel = new Label() { Text = "Description:", Font = new Font("Segoe UI", 14, FontStyle.Bold), AutoSize = true, Padding = new Padding(0, 20, 0, 5) };
             root.Controls.Add(descLabel);
 
@@ -116,7 +113,6 @@ namespace Agent_Activities_Tracker
             infoGrid.Controls.Add(lblCreated, 1, 4);
             infoGrid.Controls.Add(lblClosed, 1, 5);
 
-            // Actions
             root.Controls.Add(new Label { Text = "Actions", Font = new Font("Segoe UI", 16, FontStyle.Bold), AutoSize = true, Padding = new Padding(0, 25, 0, 10) });
 
             dgvActions = new DataGridView { Height = 300, Width = 1600, ReadOnly = true, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells, AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells, BackgroundColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
@@ -209,7 +205,6 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // Supervisor → go back to ShowSupervisorForm
             if (user.role?.ToLower() == "supervisor")
             {
                 var sup = new ShowSupervisorForm();
@@ -217,7 +212,6 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // Agent → return to normal case view (FormViewCase)
             if (user.role?.ToLower() == "agent")
             {
                 if (AppState.Navigation.Count > 0)
@@ -227,7 +221,6 @@ namespace Agent_Activities_Tracker
                 }
                 else
                 {
-                    // fallback: show agent dashboard
                     var agent = new ShowAgentForm(false);
                     agent.Show();
                 }
@@ -235,7 +228,6 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            // Default fallback (just in case)
             Application.Exit();
         }
 
