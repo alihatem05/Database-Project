@@ -195,7 +195,7 @@ namespace Agent_Activities_Tracker
             var update = Builders<BsonDocument>.Update
                 .Set("title", txtTitle.Text.Trim())
                 .Set("description", txtDescription.Text.Trim())
-                .Set("priority", txtPriority.Text.Trim())
+                .Set("priority", txtPriority.Text.Trim().ToLower())
                 .Set("last_modified", DateTime.UtcNow);
 
             try
