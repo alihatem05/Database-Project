@@ -230,46 +230,34 @@ namespace Agent_Activities_Tracker
                 MessageBox.Show("No case loaded.");
                 return;
             }
-
             var filter = Builders<BsonDocument>.Filter.Eq("case_id", caseId);
-            var caseActions = actionsCollection.Find(filter).ToList();
 
-            if (caseActions.Count == 0)
+            var doc = caseCollection.Find(filter).FirstOrDefault();
+
+            if (doc == null)
             {
-                MessageBox.Show(
-                    "This case cannot be closed because it has no actions.\n" +
-                    "Add at least one action before ending the case.",
-                    "Cannot Close Case",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                MessageBox.Show("Case not found.");
                 return;
             }
 
-            bool anyReviewed = caseActions.Any(a =>
-                a.Contains("is_reviewed") &&
-                a["is_reviewed"].IsBoolean &&
-                a["is_reviewed"].AsBoolean == true);
-
-            if (!anyReviewed)
-            {
-                MessageBox.Show(
-                    "This case cannot be closed because none of its actions are reviewed.\n" +
-                    "At least one action must be reviewed before closing.",
-                    "Cannot Close Case",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
+            string normalizedPriority = txtPriority.Text.Trim().ToLower();
+            string normalizedOrigin = doc.GetValue("case_origin", "")
+                                         .ToString()
+                                         .Trim()
+                                         .ToLower();
 
             caseCollection.UpdateOne(
                 filter,
                 Builders<BsonDocument>.Update
                     .Set("status", "closed")
-                    .Set("closed_date", DateTime.UtcNow)
+                    .Set("closed_date", new BsonDateTime(DateTime.UtcNow))
+                    .Set("priority", normalizedPriority)
+                    .Set("case_origin", normalizedOrigin)
             );
 
-            var doc = caseCollection.Find(filter).FirstOrDefault();
-            var actions = caseActions; 
+            var actions = actionsCollection.Find(Builders<BsonDocument>.Filter.Eq("case_id", caseId))
+                                          .Sort(Builders<BsonDocument>.Sort.Ascending("timestamp"))
+                                          .ToList();
 
             var report = new FormReport(doc, actions);
             this.Hide();

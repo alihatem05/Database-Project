@@ -83,33 +83,89 @@ namespace Agent_Activities_Tracker
             Controls.Add(panelCases);
 
             Load += ShowSupervisorForm_Load;
+            var btnDelete = new Button
+            {
+                Text = "Archive Case",
+                Size = new Size(140, 40),
+                Location = new Point(300, 420),
+                BackColor = Color.IndianRed,
+                ForeColor = Color.White
+            };
+
+            btnDelete.Click += BtnDelete_Click;
+            panelCases.Controls.Add(btnDelete);
+
+
+        }
+
+        private async void BtnDelete_Click(object sender, EventArgs e)
+        {
+            if (dgvCases.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a case first.");
+                return;
+            }
+
+            string caseId = dgvCases.SelectedRows[0]
+                .Cells["CaseId"]
+                .Value
+                .ToString();
+
+            var confirm = MessageBox.Show(
+                "This will archive the case and remove it from active cases.\nContinue?",
+                "Confirm",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                var service = new CaseService();
+                bool ok = await service.ArchiveAndDeleteCaseAsync(caseId);
+
+                if (ok)
+                {
+                    MessageBox.Show("Case archived successfully.");
+                    await LoadCasesAsync();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show(ex.Message, "Operation Not Allowed");
+            }
+
+        }
+
+        private async Task LoadCasesAsync()
+        {
+            var user = AppState.CurrentUser;
+
+            var filter = Builders<BsonDocument>.Filter.And(
+                Builders<BsonDocument>.Filter.Eq("supervisor_id", user.employee_id),
+                Builders<BsonDocument>.Filter.Ne("is_archived", true)   
+            );
+
+            caseDocs = await casesCollection.Find(filter)
+                .Sort(Builders<BsonDocument>.Sort.Descending("creation_date"))
+                .ToListAsync();
+
+            DisplayCases(caseDocs);
         }
 
         private async void ShowSupervisorForm_Load(object sender, EventArgs e)
         {
-            var user = AppState.CurrentUser;
-            if (user == null)
+            if (AppState.CurrentUser == null)
             {
-                MessageBox.Show("No user logged in.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("No user logged in.", "Error");
                 ReturnToLogin();
                 return;
             }
 
-            try
-            {
-                var filter = Builders<BsonDocument>.Filter.Eq("supervisor_id", user.employee_id);
-
-                caseDocs = await casesCollection.Find(filter)
-                    .Sort(Builders<BsonDocument>.Sort.Descending("creation_date"))
-                    .ToListAsync();
-
-                DisplayCases(caseDocs);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to load cases:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            await LoadCasesAsync();
         }
+
 
         private void DisplayCases(List<BsonDocument> docs)
         {
