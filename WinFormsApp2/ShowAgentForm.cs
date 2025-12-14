@@ -39,12 +39,6 @@ namespace AgentActivitiesTracker
         private async void ShowAgentForm_Load(object sender, EventArgs e)
         {
             var user = AppState.CurrentUser;
-            if (user == null)
-            {
-                MessageBox.Show("No user logged in.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                ReturnToLogin();
-                return;
-            }
 
             try
             {
