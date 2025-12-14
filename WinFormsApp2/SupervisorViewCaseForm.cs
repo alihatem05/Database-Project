@@ -78,9 +78,12 @@ namespace Agent_Activities_Tracker
 
         private void LoadActions(string caseId)
         {
-            var docs = actionsCollection.Find(Builders<BsonDocument>.Filter.Eq("case_id", caseId))
-                                       .Sort(Builders<BsonDocument>.Sort.Ascending("timestamp"))
-                                       .ToList();
+            var pipeline = new[]
+            {
+                new BsonDocument("$match", new BsonDocument("case_id", caseId)),
+                new BsonDocument("$sort", new BsonDocument("timestamp", 1))
+            };
+            var docs = actionsCollection.Aggregate<BsonDocument>(pipeline).ToList();
 
             dgvActions.Columns.Clear();
             dgvActions.Rows.Clear();

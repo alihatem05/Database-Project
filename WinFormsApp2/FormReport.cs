@@ -63,8 +63,8 @@ namespace Agent_Activities_Tracker
             Controls.Add(root);
 
             var headerBar = new FlowLayoutPanel { Dock = DockStyle.Top, FlowDirection = FlowDirection.LeftToRight, Height = 40 };
-            btnBack = new Button { Text = "Back", Width = 100 };
-            btnQuit = new Button { Text = "Quit", Width = 100 };
+            btnBack = new Button { Text = "Back", Width = 100, Height = 40 };
+            btnQuit = new Button { Text = "Quit", Width = 100 , Height = 40 };
             btnBack.Click += BtnBack_Click;
             btnQuit.Click += (s, e) => Application.Exit();
             headerBar.Controls.Add(btnBack);
@@ -161,7 +161,30 @@ namespace Agent_Activities_Tracker
             lblAgent.Text = "Agent:       " + ResolveName(_caseDoc.GetValue("agent_id", "").ToString());
             lblSupervisor.Text = "Supervisor:  " + ResolveName(_caseDoc.GetValue("supervisor_id", "").ToString());
 
-            dgvActions.DataSource = _actions.Select(a => new
+            var db = AppState.Db;
+            var actionsCollection = db.GetCollection<BsonDocument>("actions");
+            var caseId = _caseDoc.GetValue("case_id", "").ToString();
+
+            var pipeline = new[]
+            {
+                new BsonDocument("$match", new BsonDocument("case_id", caseId)),
+                new BsonDocument("$group", new BsonDocument
+                {
+                    { "_id", BsonNull.Value },
+                    { "total", new BsonDocument("$sum", 1) },
+                    { "reviewed", new BsonDocument("$sum", new BsonDocument("$cond", new BsonArray { "$is_reviewed", 1, 0 })) },
+                    { "duration", new BsonDocument("$sum", "$duration_minutes") }
+                })
+            };
+
+            var summary = actionsCollection.Aggregate<BsonDocument>(pipeline).FirstOrDefault();
+
+            int total = summary?["total"].AsInt32 ?? 0;
+            int reviewed = summary?["reviewed"].AsInt32 ?? 0;
+            int duration = summary?["duration"].AsInt32 ?? 0;
+
+            var actions = actionsCollection.Find(new BsonDocument("case_id", caseId)).ToList();
+            dgvActions.DataSource = actions.Select(a => new
             {
                 Type = a.GetValue("action_type", "").ToString(),
                 Description = a.GetValue("description", "").ToString(),
@@ -171,10 +194,6 @@ namespace Agent_Activities_Tracker
                 Duration = a.GetValue("duration_minutes", "").ToString(),
                 Reviewed = a.GetValue("is_reviewed", "").ToString()
             }).ToList();
-
-            int total = _actions.Count;
-            int reviewed = _actions.Count(a => a.GetValue("is_reviewed", false).ToBoolean());
-            int duration = _actions.Sum(a => a.GetValue("duration_minutes", 0).ToInt32());
 
             lblSummary.Text = $"Total actions: {total}    |    Reviewed: {reviewed}    |    Total Time: {duration} min";
         }
@@ -230,7 +249,5 @@ namespace Agent_Activities_Tracker
 
             Application.Exit();
         }
-
-
     }
 }
