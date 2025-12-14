@@ -199,10 +199,12 @@ namespace AgentActivitiesTracker
                 var db = AppState.Db;
                 var clientCollection = db.GetCollection<BsonDocument>("clients");
 
-                var lastClient = clientCollection.Find(FilterDefinition<BsonDocument>.Empty)
-                    .Sort(Builders<BsonDocument>.Sort.Descending("client_id"))
-                    .Limit(1)
-                    .FirstOrDefault();
+                var pipeline = new[]
+                {
+                    new BsonDocument("$sort", new BsonDocument("client_id", -1)),
+                    new BsonDocument("$limit", 1)
+                };
+                var lastClient = clientCollection.Aggregate<BsonDocument>(pipeline).FirstOrDefault();
 
                 int nextNumber = 1;
                 if (lastClient != null)
