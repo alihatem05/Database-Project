@@ -13,6 +13,43 @@ public class CaseService
         _cases = AppState.Db.GetCollection<Case>("cases");
     }
 
+    public async Task CloseCaseAsync(string caseId)
+    {
+        var db = AppState.Db;
+
+        var cases = db.GetCollection<BsonDocument>("cases");
+        var actions = db.GetCollection<BsonDocument>("actions");
+
+        var caseFilter = Builders<BsonDocument>.Filter.Eq("case_id", caseId);
+
+        var caseDoc = await cases.Find(caseFilter).FirstOrDefaultAsync();
+        if (caseDoc == null)
+            throw new InvalidOperationException("Case not found.");
+
+        if (caseDoc.GetValue("status", "").ToString().ToLower() != "open")
+            throw new InvalidOperationException("Only open cases can be closed.");
+
+        var caseActions = await actions.Find(caseFilter).ToListAsync();
+        if (caseActions.Count == 0)
+            throw new InvalidOperationException("Cannot close case without actions.");
+
+        bool allReviewed = caseActions.All(a =>
+            a.GetValue("is_reviewed", false).ToBoolean()
+        );
+
+        if (!allReviewed)
+            throw new InvalidOperationException("All actions must be reviewed before closing the case.");
+
+        cases.UpdateOne(
+            caseFilter,
+            Builders<BsonDocument>.Update
+                .Set("status", "closed")
+                .Set("closed_date", new BsonDateTime(DateTime.UtcNow))
+                .Set("priority", caseDoc["priority"].ToString().ToLower())
+                .Set("case_origin", caseDoc["case_origin"].ToString().ToLower())
+        );
+    }
+
     public async Task<bool> ArchiveAndDeleteCaseAsync(string caseId)
     {
         var db = AppState.Db;

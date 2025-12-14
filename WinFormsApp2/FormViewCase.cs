@@ -222,7 +222,7 @@ namespace Agent_Activities_Tracker
 
 
 
-        private void BtnEndCase_Click(object sender, EventArgs e)
+        private async void BtnEndCase_Click(object sender, EventArgs e)
         {
             string caseId = this.Tag?.ToString();
             if (string.IsNullOrEmpty(caseId))
@@ -230,39 +230,30 @@ namespace Agent_Activities_Tracker
                 MessageBox.Show("No case loaded.");
                 return;
             }
-            var filter = Builders<BsonDocument>.Filter.Eq("case_id", caseId);
 
-            var doc = caseCollection.Find(filter).FirstOrDefault();
-
-            if (doc == null)
+            try
             {
-                MessageBox.Show("Case not found.");
-                return;
+                var service = new CaseService();
+                await service.CloseCaseAsync(caseId);
+
+                MessageBox.Show("Case closed successfully.");
+
+                var filter = Builders<BsonDocument>.Filter.Eq("case_id", caseId);
+                var doc = caseCollection.Find(filter).FirstOrDefault();
+                var actions = actionsCollection.Find(filter)
+                                              .Sort(Builders<BsonDocument>.Sort.Ascending("timestamp"))
+                                              .ToList();
+
+                var report = new FormReport(doc, actions);
+                report.Show();
+                this.Hide();
             }
-
-            string normalizedPriority = txtPriority.Text.Trim().ToLower();
-            string normalizedOrigin = doc.GetValue("case_origin", "")
-                                         .ToString()
-                                         .Trim()
-                                         .ToLower();
-
-            caseCollection.UpdateOne(
-                filter,
-                Builders<BsonDocument>.Update
-                    .Set("status", "closed")
-                    .Set("closed_date", new BsonDateTime(DateTime.UtcNow))
-                    .Set("priority", normalizedPriority)
-                    .Set("case_origin", normalizedOrigin)
-            );
-
-            var actions = actionsCollection.Find(Builders<BsonDocument>.Filter.Eq("case_id", caseId))
-                                          .Sort(Builders<BsonDocument>.Sort.Ascending("timestamp"))
-                                          .ToList();
-
-            var report = new FormReport(doc, actions);
-            this.Hide();
-            report.Show();
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show(ex.Message, "Cannot Close Case");
+            }
         }
+
 
 
 
