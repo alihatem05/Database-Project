@@ -85,9 +85,12 @@ namespace Agent_Activities_Tracker
 
         private void LoadActions(string caseId)
         {
-            var list = actionsCollection.Find(Builders<BsonDocument>.Filter.Eq("case_id", caseId))
-                                       .Sort(Builders<BsonDocument>.Sort.Ascending("timestamp"))
-                                       .ToList();
+            var pipeline = new[]
+            {
+                new BsonDocument("$match", new BsonDocument("case_id", caseId)),
+                new BsonDocument("$sort", new BsonDocument("timestamp", 1))
+            };
+            var list = actionsCollection.Aggregate<BsonDocument>(pipeline).ToList();
 
             dgvActions.DataSource = list.Select(a => new
             {
@@ -135,15 +138,15 @@ namespace Agent_Activities_Tracker
             try
             {
                 var newAction = new BsonDocument
-        {
-            { "action_id", Guid.NewGuid().ToString("N") },
-            { "case_id", caseId },
-            { "action_type", form.ActionType.Trim().ToLower() },
-            { "description", form.ActionDescription.Trim() },
-            { "timestamp", DateTime.UtcNow },
-            { "duration_minutes", form.ActionDuration },
-            { "is_reviewed", false }
-        };
+                {
+                    { "action_id", Guid.NewGuid().ToString("N") },
+                    { "case_id", caseId },
+                    { "action_type", form.ActionType.Trim().ToLower() },
+                    { "description", form.ActionDescription.Trim() },
+                    { "timestamp", DateTime.UtcNow },
+                    { "duration_minutes", form.ActionDuration },
+                    { "is_reviewed", false }
+                };
 
                 actionsCollection.InsertOne(newAction);
 
