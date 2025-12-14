@@ -118,40 +118,109 @@ namespace Agent_Activities_Tracker
             if (form.ShowDialog() != DialogResult.OK) return;
 
             string caseId = this.Tag?.ToString();
-            if (string.IsNullOrEmpty(caseId)) { MessageBox.Show("No case loaded."); return; }
-
-            var newAction = new BsonDocument
+            if (string.IsNullOrEmpty(caseId))
             {
-                { "action_id", Guid.NewGuid().ToString("N") },
-                { "case_id", caseId },
-                { "action_type", form.ActionType },
-                { "description", form.ActionDescription },
-                { "timestamp", DateTime.UtcNow },
-                { "duration_minutes", form.ActionDuration },
-                { "is_reviewed", false }
-            };
+                MessageBox.Show("No case loaded.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            actionsCollection.InsertOne(newAction);
-            caseCollection.UpdateOne(Builders<BsonDocument>.Filter.Eq("case_id", caseId),
-                Builders<BsonDocument>.Update.AddToSet("actions", newAction["action_id"]));
+            if (string.IsNullOrWhiteSpace(form.ActionType) ||
+                string.IsNullOrWhiteSpace(form.ActionDescription) ||
+                form.ActionDuration <= 0)
+            {
+                MessageBox.Show("Please fill in all fields.", "Empty Fields", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            LoadActions(caseId);
+            try
+            {
+                var newAction = new BsonDocument
+        {
+            { "action_id", Guid.NewGuid().ToString("N") },
+            { "case_id", caseId },
+            { "action_type", form.ActionType.Trim().ToLower() },
+            { "description", form.ActionDescription.Trim() },
+            { "timestamp", DateTime.UtcNow },
+            { "duration_minutes", form.ActionDuration },
+            { "is_reviewed", false }
+        };
+
+                actionsCollection.InsertOne(newAction);
+
+                caseCollection.UpdateOne(
+                    Builders<BsonDocument>.Filter.Eq("case_id", caseId),
+                    Builders<BsonDocument>.Update
+                        .AddToSet("actions", newAction["action_id"])
+                        .Set("last_modified", DateTime.UtcNow)
+                );
+
+                LoadActions(caseId);
+                MessageBox.Show("Action added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (MongoWriteException mwx)
+            {
+                MessageBox.Show($"Database error: {mwx.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
+
 
         private void BtnUpdate_Click(object sender, EventArgs e)
         {
             string caseId = this.Tag?.ToString();
-            if (string.IsNullOrEmpty(caseId)) { MessageBox.Show("No case loaded."); return; }
+            if (string.IsNullOrEmpty(caseId))
+            {
+                MessageBox.Show("No case loaded.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtTitle.Text) ||
+                string.IsNullOrWhiteSpace(txtDescription.Text) ||
+                string.IsNullOrWhiteSpace(txtPriority.Text))
+            {
+                MessageBox.Show("Please fill in all fields.", "Empty Fields", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var allowedPriorities = new[] { "Low", "Medium", "High" };
+            if (!allowedPriorities.Any(p => p.Equals(txtPriority.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("Invalid priority. Allowed: Low, Medium, High.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             var update = Builders<BsonDocument>.Update
-                .Set("title", txtTitle.Text)
-                .Set("description", txtDescription.Text)
-                .Set("priority", txtPriority.Text)
-                .Set("last_updated", DateTime.UtcNow);
+                .Set("title", txtTitle.Text.Trim())
+                .Set("description", txtDescription.Text.Trim())
+                .Set("priority", txtPriority.Text.Trim())
+                .Set("last_modified", DateTime.UtcNow);
 
-            caseCollection.UpdateOne(Builders<BsonDocument>.Filter.Eq("case_id", caseId), update);
-            MessageBox.Show("Updated.");
+            try
+            {
+                var result = caseCollection.UpdateOne(
+                    Builders<BsonDocument>.Filter.Eq("case_id", caseId),
+                    update
+                );
+
+                if (result.MatchedCount == 0)
+                {
+                    MessageBox.Show("Case not found or ID is invalid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    MessageBox.Show("Case updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Database error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
+
+
 
         private void BtnEndCase_Click(object sender, EventArgs e)
         {

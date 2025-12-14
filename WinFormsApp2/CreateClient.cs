@@ -262,7 +262,7 @@ namespace AgentActivitiesTracker
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error creating client:\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error creating client:\nMake sure your inputs fit the validation schema.");
             }
         }
     }

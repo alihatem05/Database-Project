@@ -225,31 +225,36 @@ public class CreateCaseForm : Form
     private async void BtnCreateCase_Click(object sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(txtTitle.Text) ||
-            string.IsNullOrWhiteSpace(txtDescription.Text) ||
             cmbPriority.SelectedIndex == -1 ||
             cmbOrigin.SelectedIndex == -1 ||
             cmbClient.SelectedIndex == -1)
         {
-            MessageBox.Show("Please fill in all fields before saving.",
-                        "Missing Information",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
+            MessageBox.Show(
+                "Please fill in all needed fields before saving.",
+                "Missing Information",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            );
             return;
         }
 
-        string selectedClient = cmbClient.SelectedItem.ToString();
-        string clientId = selectedClient.Split('-')[0].Trim();
+        try
+        {
+            string selectedClient = cmbClient.SelectedItem.ToString();
+            string clientId = selectedClient.Split('-')[0].Trim();
+            string supervisorId = GetRandomSupervisorId();
 
-        string supervisorId = GetRandomSupervisorId();
+            string priorityNormalized = cmbPriority.Text.Trim().ToLower(); 
+            string originNormalized = cmbOrigin.Text.Trim().ToLower();
 
-        var doc = new BsonDocument
+            var doc = new BsonDocument
         {
             { "case_id", GenerateCaseId() },
             { "title", txtTitle.Text.Trim() },
             { "description", txtDescription.Text.Trim() },
-            { "priority", cmbPriority.Text },
+            { "priority", priorityNormalized },
             { "status", "open" },
-            { "case_origin", cmbOrigin.Text },
+            { "case_origin", originNormalized },
             { "creation_date", DateTime.UtcNow },
             { "tags", new BsonArray() },
             { "client_id", clientId },
@@ -257,19 +262,29 @@ public class CreateCaseForm : Form
             { "supervisor_id", supervisorId }
         };
 
-        await casesCollection.InsertOneAsync(doc);
+            await casesCollection.InsertOneAsync(doc);
 
-        MessageBox.Show("Case Created Successfully!");
+            MessageBox.Show("Case Created Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-        if (AppState.Navigation.Count > 0)
-        {
-            var prev = AppState.Navigation.Pop();
-            this.Hide();
-            prev.Show();
+            if (AppState.Navigation.Count > 0)
+            {
+                var prev = AppState.Navigation.Pop();
+                this.Hide();
+                prev.Show();
+            }
+            else
+            {
+                Application.Exit();
+            }
         }
-        else
+        catch (MongoWriteException mwx)
         {
-            Application.Exit();
+            MessageBox.Show($"Database error: {mwx.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+
 }
