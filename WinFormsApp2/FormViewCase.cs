@@ -188,7 +188,7 @@ namespace Agent_Activities_Tracker
                 return;
             }
 
-            var allowedPriorities = new[] { "Low", "Medium", "High" };
+            var allowedPriorities = new[] { "Low", "Medium", "High", "Critical" };
             if (!allowedPriorities.Any(p => p.Equals(txtPriority.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show("Invalid priority. Allowed: Low, Medium, High.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
